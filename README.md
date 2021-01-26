@@ -1,7 +1,7 @@
 robo-paracept
 =============
 
-[![Build Status](https://travis-ci.org/Codeception/robo-paracept.svg?branch=master)](https://travis-ci.org/Codeception/robo-paracept) 
+[![Build Status](https://travis-ci.org/Codeception/robo-paracept.svg?branch=master)](https://travis-ci.org/Codeception/robo-paracept)
 [![Latest Stable Version](https://poser.pugx.org/codeception/robo-paracept/version)](https://packagist.org/packages/codeception/robo-paracept)
 [![Total Downloads](https://poser.pugx.org/codeception/robo-paracept/downloads)](https://packagist.org/packages/codeception/robo-paracept)
 [![License](https://poser.pugx.org/codeception/robo-paracept/license)](https://packagist.org/packages/codeception/robo-paracept)
@@ -45,9 +45,29 @@ Thus, we are going to prepare a set of predefined tasks that can be combined and
 
 ## Tasks
 
-### SplitTestsByGroups
+### SplitTestsByTime
 
-Loads tests from a folder and distributes them between groups.
+Enable extension for collect execution time of you use taskSplitTestsByTime
+
+```
+extensions:
+    enabled:
+        - Codeception\Task\TimeReporter
+```
+
+Loads tests from a folder and distributes them between groups by execution time.
+
+```php
+$this->taskSplitTestsByTime(5)
+    ->testsFrom('tests/acceptance')
+    ->projectRoot('.')
+    ->groupsTo('tests/_data/group_')
+    ->run();
+```
+
+this command need run all tests with `Codeception\Task\TimeReporter` for collect execution time. If you want just split tests between group (and not execute its) you can use SplitTestsByGroups.
+
+### SplitTestsByGroups
 
 ```php
 $this->taskSplitTestsByGroups(5)
