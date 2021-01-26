@@ -13,19 +13,8 @@
             "Codeception\\Task\\": "src/"
         }
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com:/consolidation/robo.git"
-        }
-    ],
-    "require": {
-        "consolidation/robo": "1.x-dev@dev"
-    },
     "require-dev": {
         "codeception/base": "^2.2",
         "codeception/codeception": "^4.1"
-    },
-    "minimum-stability": "dev",
-    "prefer-stable" : true
+    }
 }
