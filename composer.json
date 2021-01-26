@@ -1,23 +1,23 @@
 {
-    "name": "codeception/robo-paracept",
+    "name": "ccsuperstar/robo-paracept-oc",
     "description": "Codeception Parallel Execution Tasks via Robo Task Runner",
     "license": "MIT",
     "authors": [
         {
-            "name": "Davert",
-            "email": "davert@codeception.com"
+            "name": "Ccsuperstar",
+            "email": "caro.buze@gmail.com"
         }
     ],
     "autoload":{
         "psr-4":{
-            "Codeception\\Task\\":"src"
+            "Codeception\\Task\\": "src/"
         }
     },
     "require": {
-        "consolidation/robo": "^1.0.0"
+        "consolidation/robo": "^3.x-dev"
     },
     "require-dev": {
         "codeception/base": "^2.2",
-        "codeception/codeception": "^2.2"
+        "codeception/codeception": "^4.1"
     }
 }
