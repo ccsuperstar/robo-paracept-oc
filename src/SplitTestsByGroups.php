@@ -16,6 +16,16 @@ trait SplitTestsByGroups
     /**
      * @param $numGroups
      *
+     * @return SplitTestsByTimeTask
+     */
+    protected function taskSplitTestsByTime($numGroups)
+    {
+        return $this->task(SplitTestsByTimeTask::class, $numGroups);
+    }
+    
+    /**
+     * @param $numGroups
+     *
      * @return SplitTestsByGroupsTask
      */
     protected function taskSplitTestsByGroups($numGroups)
@@ -154,6 +164,95 @@ abstract class TestsSplitter extends BaseTask
         return $testsListWithDependencies;
     }
 }
+
+/**
+ * Loads all tests into groups and saves them to groupfile according to pattern.
+ *
+ * ``` php
+ * <?php
+ * $this->taskSplitTestsByTime(5)
+ *    ->testsFrom('tests')
+ *    ->groupsTo('tests/_log/paratest_')
+ *    ->run();
+ * ?>
+ * ```
+ */
+class SplitTestsByTimeTask extends TestsSplitter implements TaskInterface
+{
+    protected $statFile = 'tests/_output/timeReport.json';
+
+    public function statFile($path)
+    {
+        $this->statFile = $path;
+
+        return $this;
+    }
+
+    public function run()
+    {
+        if (!class_exists('\Codeception\Test\Loader')) {
+            throw new TaskException($this, 'This task requires Codeception to be loaded. Please require autoload.php of Codeception');
+        }
+        if (!is_file($this->statFile)) {
+            throw new TaskException($this, 'Can not find stat file - run tests with TimeReporter extension');
+        }
+
+        $testLoader = new \Codeception\Test\Loader(['path' => $this->testsFrom]);
+        $testLoader->loadTests($this->testsFrom);
+        $tests = $testLoader->getTests();
+
+        $data = file_get_contents($this->statFile);
+        $data = json_decode($data, true);
+
+        $testsWithTime = [];
+        $groups = [];
+
+        $this->printTaskInfo('Processing ' . count($tests) . ' tests');
+        foreach ($tests as $test) {
+            if ($test instanceof DataProvider || $test instanceof DataProviderTestSuite) {
+                $test = current($test->tests());
+            }
+            $testName = \Codeception\Test\Descriptor::getTestFullName($test);
+            $testsWithTime[$testName] = $data[$testName];
+        }
+
+        arsort($testsWithTime);
+
+        for ($i = 0; $i < $this->numGroups; $i++) {
+            $groups[$i] = [
+                'tests' => [],
+                'sum' => 0,
+            ];
+        }
+
+        foreach ($testsWithTime as $test => $time) {
+            $i = $this->getMinGroup($groups);
+            $groups[$i]['tests'][] = $test;
+            $groups[$i]['sum'] += $time;
+        }
+
+        // saving group files
+        foreach ($groups as $i => $group) {
+            $filename = $this->saveTo . ($i + 1);
+            $this->printTaskInfo("Writing $filename: " . count($tests) . ' tests with ' . number_format($group['sum'], 2) . ' seconds');
+            file_put_contents($filename, implode("\n", $group['tests']));
+        }
+    }
+
+    protected function getMinGroup($groups)
+    {
+        $min = 0;
+        $minSum = $groups[0]['sum'];
+        foreach ($groups as $i => $data) {
+            if ($data['sum'] < $minSum) {
+                $min = $i;
+                $minSum = $data['sum'];
+            }
+        }
+        return $min;
+    }
+}
+
 
 /**
  * Loads all tests into groups and saves them to groupfile according to pattern.
