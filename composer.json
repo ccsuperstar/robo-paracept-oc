@@ -15,7 +15,7 @@
     },
     "require": {
         "php": "^7.2",
-        "consolidation/robo": "2.x-dev@dev"
+        "consolidation/robo": "3.x-dev@dev"
     },
     "require-dev": {	    
         "codeception/base": "^2.2",
