@@ -220,7 +220,6 @@ class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
                     $timesCat+= $d;
                 }
             }
-            echo $fileName . ' : ' . $timesCat . "\n";
             $filesWithTime[$fileName] = $timesCat;
         }
         arsort($filesWithTime);
