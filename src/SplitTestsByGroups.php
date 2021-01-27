@@ -47,6 +47,7 @@ trait SplitTestsByGroups
 abstract class TestsSplitter extends BaseTask
 {
     protected $numGroups;
+    protected $timeReportFile = 'tests/_data/time-reference/timeReport-stage.json';
     protected $projectRoot = '.';
     protected $testsFrom = 'tests';
     protected $saveTo = 'tests/_data/paracept_';
@@ -56,6 +57,13 @@ abstract class TestsSplitter extends BaseTask
     public function __construct($groups)
     {
         $this->numGroups = $groups;
+    }
+
+    public function timeReportFile($path)
+    {
+        $this->timeReportFile = $path;
+
+        return $this;
     }
 
     public function projectRoot($path)
@@ -179,18 +187,9 @@ abstract class TestsSplitter extends BaseTask
  */
 class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
 {
-    protected $statFile = 'tests/_data/timeReport.json';
-
-    public function statFile($path)
-    {
-        $this->statFile = $path;
-
-        return $this;
-    }
-
     public function run()
     {
-        if (!is_file($this->statFile)) {
+        if (!is_file($this->timeReportFile)) {
             throw new TaskException($this, 'Can not find stat file - run tests with TimeReporter extension');
         }
         
@@ -205,7 +204,7 @@ class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
             ->exclude($this->excludePath)
             ->notName($this->notName);
 
-        $data = file_get_contents($this->statFile);
+        $data = file_get_contents($this->timeReportFile);
         $data = json_decode($data, true);
 
         $filesWithTime = [];
@@ -223,7 +222,6 @@ class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
             $filesWithTime[$fileName] = $timesCat;
         }
         arsort($filesWithTime);
-
         for ($i = 0; $i < $this->numGroups; $i++) {
             $groups[$i] = [
                 'tests' => [],
