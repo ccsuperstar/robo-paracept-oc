@@ -16,16 +16,6 @@ trait SplitTestsByGroups
     /**
      * @param $numGroups
      *
-     * @return SplitTestsByTimeTask
-     */
-    protected function taskSplitTestsByTime($numGroups)
-    {
-        return $this->task(SplitTestsByTimeTask::class, $numGroups);
-    }
-    
-    /**
-     * @param $numGroups
-     *
      * @return SplitTestsByGroupsTask
      */
     protected function taskSplitTestsByGroups($numGroups)
@@ -41,6 +31,16 @@ trait SplitTestsByGroups
     protected function taskSplitTestFilesByGroups($numGroups)
     {
         return $this->task(SplitTestFilesByGroupsTask::class, $numGroups);
+    }
+
+    /**
+     * @param $numGroups
+     *
+     * @return SplitTestsFilesByTimeTask
+     */
+    protected function taskSplitTestsFilesByTime($numGroups)
+    {
+        return $this->task(SplitTestsFilesByTimeTask::class, $numGroups);
     }
 }
 
@@ -170,16 +170,16 @@ abstract class TestsSplitter extends BaseTask
  *
  * ``` php
  * <?php
- * $this->taskSplitTestsByTime(5)
+ * $this->taskSplitTestsFilesByTime(5)
  *    ->testsFrom('tests')
  *    ->groupsTo('tests/_log/paratest_')
  *    ->run();
  * ?>
  * ```
  */
-class SplitTestsByTimeTask extends TestsSplitter implements TaskInterface
+class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
 {
-    protected $statFile = 'tests/_output/timeReport.json';
+    protected $statFile = 'tests/_data/timeReport.json';
 
     public function statFile($path)
     {
@@ -190,33 +190,40 @@ class SplitTestsByTimeTask extends TestsSplitter implements TaskInterface
 
     public function run()
     {
-        if (!class_exists('\Codeception\Test\Loader')) {
-            throw new TaskException($this, 'This task requires Codeception to be loaded. Please require autoload.php of Codeception');
-        }
         if (!is_file($this->statFile)) {
             throw new TaskException($this, 'Can not find stat file - run tests with TimeReporter extension');
         }
-
-        $testLoader = new \Codeception\Test\Loader(['path' => $this->testsFrom]);
-        $testLoader->loadTests($this->testsFrom);
-        $tests = $testLoader->getTests();
+        
+        $files = Finder::create()
+            ->followLinks()
+            ->name('*Cept.php')
+            ->name('*Cest.php')
+            ->name('*Test.php')
+            ->name('*.feature')
+            ->path($this->testsFrom)
+            ->in($this->projectRoot ? $this->projectRoot : getcwd())
+            ->exclude($this->excludePath)
+            ->notName($this->notName);
 
         $data = file_get_contents($this->statFile);
         $data = json_decode($data, true);
 
-        $testsWithTime = [];
+        $filesWithTime = [];
         $groups = [];
 
-        $this->printTaskInfo('Processing ' . count($tests) . ' tests');
-        foreach ($tests as $test) {
-            if ($test instanceof DataProvider || $test instanceof DataProviderTestSuite) {
-                $test = current($test->tests());
+        $this->printTaskInfo('Processing ' . count($files) . ' tests');
+        foreach ($files as $file) {
+            $fileName = $file->getRelativePathname();
+            $timesCat = 0;
+            foreach ($data as $key => $d) {
+                if (strpos($key, $fileName) !== false) {
+                    $timesCat+= $d;
+                }
             }
-            $testName = \Codeception\Test\Descriptor::getTestFullName($test);
-            $testsWithTime[$testName] = $data[$testName];
+            echo $fileName . ' : ' . $timesCat . "\n";
+            $filesWithTime[$fileName] = $timesCat;
         }
-
-        arsort($testsWithTime);
+        arsort($filesWithTime);
 
         for ($i = 0; $i < $this->numGroups; $i++) {
             $groups[$i] = [
@@ -225,16 +232,16 @@ class SplitTestsByTimeTask extends TestsSplitter implements TaskInterface
             ];
         }
 
-        foreach ($testsWithTime as $test => $time) {
+        foreach ($filesWithTime as $file => $time) {
             $i = $this->getMinGroup($groups);
-            $groups[$i]['tests'][] = $test;
+            $groups[$i]['tests'][] = $file;
             $groups[$i]['sum'] += $time;
         }
 
         // saving group files
         foreach ($groups as $i => $group) {
             $filename = $this->saveTo . ($i + 1);
-            $this->printTaskInfo("Writing $filename: " . count($tests) . ' tests with ' . number_format($group['sum'], 2) . ' seconds');
+            $this->printTaskInfo("Writing $filename: " . count($group['tests']) . ' tests with ' . number_format($group['sum'], 2) . ' seconds');
             file_put_contents($filename, implode("\n", $group['tests']));
         }
     }
@@ -252,7 +259,6 @@ class SplitTestsByTimeTask extends TestsSplitter implements TaskInterface
         return $min;
     }
 }
-
 
 /**
  * Loads all tests into groups and saves them to groupfile according to pattern.
