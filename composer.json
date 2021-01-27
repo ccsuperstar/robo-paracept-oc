@@ -13,8 +13,11 @@
             "Codeception\\Task\\": "src/"
         }
     },
-    "require-dev": {
+    "require": {
+        "consolidation/robo": "1.x-dev@dev"
+    },
+    "require-dev": {	    
         "codeception/base": "^2.2",
-        "codeception/codeception": "^4.1"
+        "codeception/codeception": "^2.2"
     }
 }
