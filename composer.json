@@ -20,5 +20,7 @@
     "require-dev": {	    
         "codeception/base": "^2.2",
         "codeception/codeception": "^4.1"
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
 }
