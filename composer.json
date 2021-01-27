@@ -13,15 +13,9 @@
             "Codeception\\Task\\": "src/"
         }
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com:/consolidation/robo.git"
-        }
-    ],
     "require": {
         "php": "^7.3",
-        "consolidation/robo": "^2.x-dev@dev"
+        "consolidation/robo": "^2.x-dev"
     },
     "require-dev": {	    
         "codeception/base": "^2.2",
