@@ -14,7 +14,7 @@
         }
     },
     "require": {
-        "php": "^7.2",
+        "php": "^7.3",
         "consolidation/robo": "3.x-dev@dev"
     },
     "require-dev": {	    
