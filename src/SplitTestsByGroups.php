@@ -189,8 +189,9 @@ class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
 {
     public function run()
     {
+        echo $this->timeReportFile;
         if (!is_file($this->timeReportFile)) {
-            throw new TaskException($this, 'Can not find stat file - run tests with TimeReporter extension');
+            throw new TaskException($this, 'Can not find time report file - run tests with TimeReporter extension');
         }
         
         $files = Finder::create()
