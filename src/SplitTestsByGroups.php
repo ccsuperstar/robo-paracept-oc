@@ -179,18 +179,16 @@ abstract class TestsSplitter extends BaseTask
  */
 class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
 {
-    protected $timeReportFile = 'tests/_data/time-reference/timeReport-stage.json';
+    protected $timeReportFile = 'tests/_data/time-reference/timeReport.json';
 
     public function timeReportFile($path)
     {
-        echo $path;
         $this->timeReportFile = $path;
 
         return $this;
     }
     public function run()
     {
-        echo $this->timeReportFile;
         if (!is_file($this->timeReportFile)) {
             throw new TaskException($this, 'Can not find time report file - run tests with TimeReporter extension');
         }
