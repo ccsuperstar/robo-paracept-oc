@@ -19,6 +19,6 @@
     "require-dev": {	    
         "codeception/base": "^3.1",
         "codeception/codeception": "^4.1",
-        "consolidation/robo": "3.x-dev@dev"
+        "consolidation/robo": "3.x"
     }
 }
