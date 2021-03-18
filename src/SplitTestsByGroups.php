@@ -1,10 +1,6 @@
 <?php
 namespace Codeception\Task;
 
-use Codeception\Lib\GroupManager;
-use Codeception\Test\Cept;
-use Codeception\Test\Cest;
-use Codeception\Util\Annotation;
 use Codeception\Test\Descriptor as TestDescriptor;
 use Codeception\Test\Loader as TestLoader;
 use \PHPUnit\Framework\DataProviderTestSuite as DataProviderTestSuite;
@@ -274,31 +270,7 @@ class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
  * ```
  */
 class SplitTestsByGroupsTask extends TestsSplitter implements TaskInterface
-{
-    private $filterGroup = '';
-
-    /**
-     * Matches any line that this a line comment beginning with "//".
-     */
-    const REGEXP_LINE_COMMENT = '~\/\/(.*?)$~m';
-
-    /**
-     * Matches any line that is part of a block comment beginning with "/*".
-     */
-    const REGEXP_BLOCK_COMMENT = '~\/*\*(.*?)\*\/~ms';
-
-    /**
-     * Sets a filter group. Only tests belonging to this specific Codeception group will be executed.
-     *
-     * @param $group string name of the Codeception group to be filtered
-     * @return $this
-     */
-    public function filterByGroup($group)
-    {
-        $this->filterGroup = $group;
-        return $this;
-    }
-    
+{    
     public function run()
     {
         if (!class_exists('\Codeception\Test\Loader')) {
@@ -401,28 +373,13 @@ class SplitTestsByGroupsTask extends TestsSplitter implements TaskInterface
             if (!empty($groups[$i]) AND count($groups[$i]) >= $numberOfElementsInGroup AND $i <= ($this->numGroups-1) AND empty($testsListWithDependencies[$test])) {
                 $i++;
             }
-            if (empty($this->filterGroup)) {
-                $fullname = str_replace('\\', '/', \Codeception\Test\Descriptor::getTestFullName($test));
-                $groups[($i % $this->numGroups) + 1][] = $fullname;
-                $i++;
-            }
             $groups[$i][] = $test;
         }
-        
-        $this->printTaskInfo(
-            sprintf(
-                "%s test%s match%s the criterias. They will be divided in up to %s groups.",
-                $i,
-                ($i == 1 ? '' : 's'),
-                ($i == 1 ? 'es' : ''),
-                $this->numGroups
-            )
-        );
         
         // saving group files
         foreach ($groups as $i => $tests) {
             $filename = $this->saveTo . $i;
-            $this->printTaskInfo(sprintf("Writing %s (includes %s tests)", $filename, count($tests)));
+            $this->printTaskInfo("Writing $filename");            
             file_put_contents($filename, implode("\n", $tests));
         }
     }
