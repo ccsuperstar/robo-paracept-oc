@@ -42,6 +42,16 @@ trait SplitTestsByGroups
     {
         return $this->task(SplitTestsFilesByTimeTask::class, $numGroups);
     }
+
+    /**
+     * @param $numGroups
+     *
+     * @return SplitTestsFilesByFailedTask
+     */
+    protected function taskSplitTestsFilesByFailed($numGroups)
+    {
+        return $this->task(SplitTestsFilesByFailedTask::class, $numGroups);
+    }
 }
 
 abstract class TestsSplitter extends BaseTask
@@ -254,6 +264,85 @@ class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
             }
         }
         return $min;
+    }
+}
+
+
+
+/**
+ * Loads all tests into groups and saves them to groupfile according to pattern.
+ *
+ * ``` php
+ * <?php
+ * $this->taskSplitTestsFilesByFailed(5)
+ *    ->testsFrom('tests')
+ *    ->groupsTo('tests/_log/paratest_')
+ *    ->run();
+ * ?>
+ * ```
+ */
+class SplitTestsFilesByFailedTask extends TestsSplitter implements TaskInterface
+{
+    protected $failedReportFile = 'tests/_ouput/failed';
+
+    public function failedReportFile($path)
+    {
+        $this->failedReportFile = $path;
+
+        return $this;
+    }
+    public function run()
+    {
+        if (!is_file($this->failedReportFile)) {
+            throw new TaskException($this, 'Can not find failed report file - no test have failed');
+        }
+        
+        $files = Finder::create()
+            ->followLinks()
+            ->name('*Cept.php')
+            ->name('*Cest.php')
+            ->name('*Test.php')
+            ->name('*.feature')
+            ->path($this->testsFrom)
+            ->in($this->projectRoot ? $this->projectRoot : getcwd())
+            ->exclude($this->excludePath)
+            ->notName($this->notName);
+
+        $data = file_get_contents($this->failedReportFile);
+        $data = json_decode($data, true);
+
+        $filesFailed = [];
+        $groups = [];
+
+        $this->printTaskInfo('Processing ' . count($files) . ' tests');
+        foreach ($files as $file) {
+            $fileName = $file->getRelativePathname();
+            $failedFile = 0;
+            foreach ($data as $key) {
+                if (strpos($key, $fileName) !== false) {
+                    $failedFile+= $key;
+                }
+            }
+            $filesFailed[$fileName] = $failedFile;
+        }
+        
+        for ($i = 0; $i < $this->numGroups; $i++) {
+            $groups[$i] = [
+                'tests' => [],
+                'sum' => 0,
+            ];
+        }
+
+        foreach ($filesFailed as $file) {
+            $groups[$i]['tests'][] = $file;
+        }
+
+        // saving group files
+        foreach ($groups as $i => $group) {
+            $filename = $this->saveTo . ($i + 1);
+            $this->printTaskInfo("Writing $filename: " . count($group['tests']) . ' tests');
+            file_put_contents($filename, implode("\n", $group['tests']));
+        }
     }
 }
 
