@@ -283,7 +283,7 @@ class SplitTestsFilesByTimeTask extends TestsSplitter implements TaskInterface
  */
 class SplitTestsFilesByFailedTask extends TestsSplitter implements TaskInterface
 {
-    protected $failedReportFile = 'tests/_ouput/failed';
+    protected $failedReportFile = 'tests/_output/failed';
 
     public function failedReportFile($path)
     {
@@ -296,52 +296,27 @@ class SplitTestsFilesByFailedTask extends TestsSplitter implements TaskInterface
         if (!is_file($this->failedReportFile)) {
             throw new TaskException($this, 'Can not find failed report file - no test have failed');
         }
-        
-        $files = Finder::create()
-            ->followLinks()
-            ->name('*Cept.php')
-            ->name('*Cest.php')
-            ->name('*Test.php')
-            ->name('*.feature')
-            ->path($this->testsFrom)
-            ->in($this->projectRoot ? $this->projectRoot : getcwd())
-            ->exclude($this->excludePath)
-            ->notName($this->notName);
 
-        $data = file_get_contents($this->failedReportFile);
-        $data = json_decode($data, true);
+        $failedFile = file_get_contents($this->failedReportFile);
+        $failedFile = explode("\n",$failedFile);
 
-        $filesFailed = [];
+
+        $i = 0;
         $groups = [];
 
-        $this->printTaskInfo('Processing ' . count($files) . ' tests');
-        foreach ($files as $file) {
-            $fileName = $file->getRelativePathname();
-            $failedFile = 0;
-            foreach ($data as $key) {
-                if (strpos($key, $fileName) !== false) {
-                    $failedFile+= $key;
-                }
-            }
-            $filesFailed[$fileName] = $failedFile;
-        }
-        
-        for ($i = 0; $i < $this->numGroups; $i++) {
-            $groups[$i] = [
-                'tests' => [],
-                'sum' => 0,
-            ];
-        }
-
-        foreach ($filesFailed as $file) {
-            $groups[$i]['tests'][] = $file;
+        $this->printTaskInfo('Processing ' . count($failedFile) . ' files');
+        // splitting tests by groups
+        /** @var SplFileInfo $file */
+        foreach ($failedFile as $file) {
+            $groups[($i % $this->numGroups) + 1][] = $file;
+            $i++;
         }
 
         // saving group files
-        foreach ($groups as $i => $group) {
-            $filename = $this->saveTo . ($i + 1);
-            $this->printTaskInfo("Writing $filename: " . count($group['tests']) . ' tests');
-            file_put_contents($filename, implode("\n", $group['tests']));
+        foreach ($groups as $i => $tests) {
+            $filename = $this->saveTo . $i;
+            $this->printTaskInfo("Writing $filename: " . count($tests) . ' tests');
+            file_put_contents($filename, implode("\n", $tests));
         }
     }
 }
