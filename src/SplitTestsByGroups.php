@@ -298,8 +298,8 @@ class SplitTestsFilesByFailedTask extends TestsSplitter implements TaskInterface
         }
 
         $failedFile = file_get_contents($this->failedReportFile);
-        $failedFile = explode("\n",$failedFile);
-
+        $failedFile = trim($failedFile, "\n");
+        $failedFile = explode("\n", $failedFile);
 
         $i = 0;
         $groups = [];
@@ -311,7 +311,7 @@ class SplitTestsFilesByFailedTask extends TestsSplitter implements TaskInterface
             $groups[($i % $this->numGroups) + 1][] = $file;
             $i++;
         }
-
+        
         // saving group files
         foreach ($groups as $i => $tests) {
             $filename = $this->saveTo . $i;
