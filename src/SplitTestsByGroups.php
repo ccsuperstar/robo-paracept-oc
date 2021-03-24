@@ -297,21 +297,20 @@ class SplitTestsFilesByFailedTask extends TestsSplitter implements TaskInterface
             throw new TaskException($this, 'Can not find failed report file - no test have failed');
         }
 
-        $failedFile = file_get_contents($this->failedReportFile);
-        $failedFile = trim($failedFile, "\n");
-        $failedFile = explode("\n", $failedFile);
+        $failedFiles = file_get_contents($this->failedReportFile);
+        $failedFiles = trim($failedFiles, "\n");
+        $failedFiles = explode("\n", $failedFiles);
 
         $i = 0;
         $groups = [];
 
-        $this->printTaskInfo('Processing ' . count($failedFile) . ' files');
-        // splitting tests by groups
+        $this->printTaskInfo('Processing ' . count($failedFiles) . ' files');
         /** @var SplFileInfo $file */
-        foreach ($failedFile as $file) {
+        foreach ($failedFiles as $file) {
             $groups[($i % $this->numGroups) + 1][] = $file;
             $i++;
         }
-        
+
         // saving group files
         foreach ($groups as $i => $tests) {
             $filename = $this->saveTo . $i;
