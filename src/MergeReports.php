@@ -203,7 +203,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
 
         //read first source file as main
         $dstHTML = new \DOMDocument();
-        $dstHTML->loadHTMLFile($this->src[0],LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        $dstHTML->loadHTMLFile('tests/_data/template_parallel_report.html',LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
 
         //main node for all table rows
         $table = (new \DOMXPath($dstHTML))->query("//table")->item(0);
@@ -211,17 +211,21 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         //prepare reference nodes for envs
         $refnodes = (new \DOMXPath($dstHTML))->query("//div[@class='layout']/table/tr[not(@class)]");
 
-        for($k=1;$k<count($this->src);$k++){
+        for($k=0;$k<count($this->src);$k++){
             $srcHTML = new \DOMDocument();
             $src = $this->src[$k];
             $srcHTML->loadHTMLFile($src,LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+            $regexDuration = '/(\d{1,}[\.]{1}\d{1})/';
+            preg_match($regexDuration, (new \DOMXPath($srcHTML))->query("//div[@class='layout']/h1/small")->item(0)->textContent, $matches);
+            $titleHTML[$k]['duration'] = $matches[0];
             $suiteNodes = (new \DOMXPath($srcHTML))->query("//div[@class='layout']/table/tr");
+
             $j=0;
             foreach($suiteNodes as $suiteNode){
                 if($suiteNode->getAttribute('class') == ''){
                     //move to next reference node
                     $j++;
-                    if($j > $refnodes->length-1) break;
+                    //if($j > $refnodes->length-1) break;
                     continue;
                 }
                 //insert nodes before current reference node
@@ -238,6 +242,8 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         $this->updateSummaryTable($dstHTML);
         $this->updateToolbarTable($dstHTML);
         $this->updateButtons($dstHTML);
+        $this->updateTitleReport($dstHTML, $titleHTML);
+        $this->removeTemplateNodes($dstHTML);
 
         //save final report
         file_put_contents($this->dst,$dstHTML->saveHTML());
@@ -305,7 +311,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         $dstFile->query($pathFor('Successful'))->item(0)->nodeValue = '✔ '.$this->countSuccess;
         $dstFile->query($pathFor('Failed'))->item(0)->nodeValue = '✗ '.$this->countFailed;
         $dstFile->query($pathFor('Skipped'))->item(0)->nodeValue = 'S '.$this->countSkipped;
-        $dstFile->query($pathFor('Incomplete'))->item(0)->nodeValue= 'I '.$this->countIncomplete;
+        $dstFile->query($pathFor('Incomplete'))->item(0)->nodeValue = 'I '.$this->countIncomplete;
     }
 
     /**
@@ -315,11 +321,38 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
     private function updateButtons($dstFile){
         $nodes = (new \DOMXPath($dstFile))->query("//div[@class='layout']/table/tr[contains(@class, 'scenarioRow')]");
         for($i=2;$i<$nodes->length;$i+=2){
-            $n = $i/2 + 1;
+            $n = $i/2;
             $p = $nodes->item($i)->childNodes->item(1)->childNodes->item(1);
             $table = $nodes->item($i+1)->childNodes->item(1)->childNodes->item(1);
             $p->setAttribute('onclick',"showHide('$n', this)");
             $table->setAttribute('id',"stepContainer".$n);
+        }
+    }
+
+    /**
+     * This function updates h1 in final report
+     * @param $dstFile \DOMDocument - destination file
+     * @param $titleHTML array
+     */
+    private function updateTitleReport($dstFile, $titleHTML){
+        $title = (new \DOMXPath($dstFile))->query("//div[@class='layout']/h1/small")->item(0);
+        $statusHTML = (new \DOMXPath($dstFile))->query("//div[@class='layout']/h1/small/span")->item(0);
+        $duration = max(array_column($titleHTML, 'duration'));
+        $statusHTML->nodeValue = ($this->countFailed > 0) ? 'FAILED' : 'OK';
+        $statusHTML->setAttribute('style', ($this->countFailed === 0) ? 'color: green' : 'color: #e74c3c');
+        $durationText = $dstFile->createTextNode(' (' . $duration . 's)');
+        $title->appendChild($durationText);
+    }
+
+    /**
+     * This function remove template nodes in final report
+     * @param $dstFile \DOMDocument - destination file
+     */
+    private function removeTemplateNodes($dstFile){
+        $parent = (new \DOMXPath($dstFile))->query("//table")->item(0);;
+        $nodes = (new \DOMXPath($dstFile))->query("//div[@class='layout']/table/tr[contains(@class, 'template')]");
+        for($i=0;$i<$nodes->length;$i++){
+            $parent->removeChild($nodes->item($i));
         }
     }
 
