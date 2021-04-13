@@ -243,6 +243,10 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         $this->moveSummaryTable($dstHTML,$table);
         $this->updateSummaryTable($dstHTML);
         $this->updateToolbarTable($dstHTML);
+
+        //save final report
+        file_put_contents($this->dst.'.backup',$dstHTML->saveHTML());
+        
         $this->updateButtons($dstHTML);
 
         //save final report
@@ -398,7 +402,6 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         for($i=2;$i<$nodes->length;$i+=2){
             $n = $i/2 + 1;
             $p = $nodes->item($i)->childNodes->item(1)->childNodes->item(1);
-            var_dump($p->nodeValue);
             $table = $nodes->item($i+1)->childNodes->item(1)->childNodes->item(1);
             // $p->setAttribute('onclick',"showHide('$n', this)");
             // $table->setAttribute('id',"stepContainer".$n);
