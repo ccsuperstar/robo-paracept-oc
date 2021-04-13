@@ -244,7 +244,6 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         $this->updateToolbarTable($dstHTML);
         $this->updateButtons($dstHTML);
         $this->updateTitleReport($dstHTML, $srcDURATION);
-        $this->removeTemplateNodes($dstHTML);
 
         //save final report
         file_put_contents($this->dst,$dstHTML->saveHTML());
@@ -255,7 +254,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
 
     private function prepareHtmlFiles($refnodes) {
 
-        //in template, we have always the four suites plus summary (we want to check if all suites names are present)
+        //in template, we have always the four suites + summary (we want to check if all suites names are present)
         foreach ($refnodes as $refnode) {
             $arrayRefNodes[] = trim($refnode->textContent);
         }
@@ -270,6 +269,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
             foreach ($srcRefNodes as $srcRefNode) {
                 $arraySrcRefNodes[$i][] = trim($srcRefNode->textContent);
             }
+            
             $diffRefNodes = array_diff($arrayRefNodes, $arraySrcRefNodes[$i]);
             $insertNodeBeforeText = null;
             if (!empty($diffRefNodes)) {
@@ -397,18 +397,6 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         $statusHTML->setAttribute('style', ($this->countFailed === 0) ? 'color: green' : 'color: #e74c3c');
         $durationText = $dstFile->createTextNode(' (' . $duration . 's)');
         $title->appendChild($durationText);
-    }
-
-    /**
-     * This function remove template nodes in final report
-     * @param $dstFile \DOMDocument - destination file
-     */
-    private function removeTemplateNodes($dstFile){
-        $parent = (new \DOMXPath($dstFile))->query("//table")->item(0);;
-        $nodes = (new \DOMXPath($dstFile))->query("//div[@class='layout']/table/tr[contains(@class, 'template')]");
-        for($i=0;$i<$nodes->length;$i++){
-            $parent->removeChild($nodes->item($i));
-        }
     }
 
 }
