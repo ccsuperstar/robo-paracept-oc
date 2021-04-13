@@ -201,7 +201,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
 
         $this->printTaskInfo("Merging HTML reports into {$this->dst}");
 
-        //read first source file as main
+        //read template source file as main
         $dstHTML = new \DOMDocument();
         $dstHTML->loadHTMLFile('tests/_data/template_parallel_report.html',LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
 
@@ -210,22 +210,23 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
 
         //prepare reference nodes for envs
         $refnodes = (new \DOMXPath($dstHTML))->query("//div[@class='layout']/table/tr[not(@class)]");
+        
+        $this->prepareHtmlFiles($refnodes);
 
         for($k=0;$k<count($this->src);$k++){
             $srcHTML = new \DOMDocument();
             $src = $this->src[$k];
-            $srcHTML->loadHTMLFile($src,LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-            $regexDuration = '/(\d{1,}[\.]{1}\d{1})/';
-            preg_match($regexDuration, (new \DOMXPath($srcHTML))->query("//div[@class='layout']/h1/small")->item(0)->textContent, $matches);
-            $titleHTML[$k]['duration'] = $matches[0];
+            $srcHTML->loadHTMLFile($src);
+            $srcDURATION[$k] = $this->getDurationFile($srcHTML, $k);
+            
             $suiteNodes = (new \DOMXPath($srcHTML))->query("//div[@class='layout']/table/tr");
-
+            
             $j=0;
             foreach($suiteNodes as $suiteNode){
-                if($suiteNode->getAttribute('class') == ''){
+                if($suiteNode->getAttribute('class') == ''){ 
                     //move to next reference node
                     $j++;
-                    //if($j > $refnodes->length-1) break;
+                    if($j > $refnodes->length-1) break;
                     continue;
                 }
                 //insert nodes before current reference node
@@ -233,16 +234,16 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
                 $table->insertBefore($suiteNode, $refnodes->item($j));
             }
         }
-
+        
         /**
-         * The next 5 functions correct our almost finished final report
+         * The next 6 functions correct our almost finished final report
          */
         $this->countSummary($dstHTML);
         $this->moveSummaryTable($dstHTML,$table);
         $this->updateSummaryTable($dstHTML);
         $this->updateToolbarTable($dstHTML);
         $this->updateButtons($dstHTML);
-        $this->updateTitleReport($dstHTML, $titleHTML);
+        $this->updateTitleReport($dstHTML, $srcDURATION);
         $this->removeTemplateNodes($dstHTML);
 
         //save final report
@@ -250,6 +251,60 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
 
         //return to initial statement
         libxml_use_internal_errors($this->previousLibXmlUseErrors);
+    }
+
+    private function prepareHtmlFiles($refnodes) {
+
+        //in template, we have always the four suites plus summary (we want to check if all suites names are present)
+        foreach ($refnodes as $refnode) {
+            $arrayRefNodes[] = trim($refnode->textContent);
+        }
+
+        for ($i=0; $i<count($this->src); $i++){
+            $srcHTML = new \DOMDocument();
+            $src = $this->src[$i];
+            $srcHTML->loadHTMLFile($src);
+            $srcTable = (new \DOMXPath($srcHTML))->query("//table")->item(0);
+            $srcRefNodes = (new \DOMXPath($srcHTML))->query("//div[@class='layout']/table/tr[not(@class)]");
+
+            foreach ($srcRefNodes as $srcRefNode) {
+                $arraySrcRefNodes[$i][] = trim($srcRefNode->textContent);
+            }
+            $diffRefNodes = array_diff($arrayRefNodes, $arraySrcRefNodes[$i]);
+            $insertNodeBeforeText = null;
+            if (!empty($diffRefNodes)) {
+                foreach ($diffRefNodes as $key => $node) {
+                    if (!str_contains($node, 'Summary')) {
+                        $newTR = $srcHTML->createElement("tr");
+                        $newTD = $srcHTML->createElement("td");
+                        $newH3 = $srcHTML->createElement("h3");
+                        $newH3Text = $srcHTML->createTextNode($node);
+                        $newH3->appendChild($newH3Text);
+                        $newTD->appendChild($newH3);
+                        $newTR->appendChild($newTD);
+                        $newTR = $srcHTML->importNode($newTR, true);
+                        $insertNodeBeforeText = $arrayRefNodes[$key+1];
+                        $insertBeforeNode = (new \DOMXPath($srcHTML))->query("//div[@class='layout']/table/tr[not(@class)][contains(.,'$insertNodeBeforeText')]");
+                        $srcTable->insertBefore($newTR, $insertBeforeNode->item(0));
+                        $newHtml = $srcHTML->saveHTML();
+                        $doc = new \DOMDocument();
+                        $doc->formatOutput = true;
+                        $doc->loadHTML($newHtml);
+                        $doc->saveHTMLFile($src);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * This function return all durations for each files 
+     * @param $srcFile \DOMDocument - src file
+     */
+    private function getDurationFile($srcFile){
+        $regexDuration = '/(\d{1,}[\.]{0,1}\d{0,})/';
+        preg_match($regexDuration, (new \DOMXPath($srcFile))->query("//div[@class='layout']/h1/small")->item(0)->textContent, $matches);
+        return $matches[0];
     }
 
     /**
@@ -321,7 +376,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
     private function updateButtons($dstFile){
         $nodes = (new \DOMXPath($dstFile))->query("//div[@class='layout']/table/tr[contains(@class, 'scenarioRow')]");
         for($i=2;$i<$nodes->length;$i+=2){
-            $n = $i/2;
+            $n = $i/2 + 1;
             $p = $nodes->item($i)->childNodes->item(1)->childNodes->item(1);
             $table = $nodes->item($i+1)->childNodes->item(1)->childNodes->item(1);
             $p->setAttribute('onclick',"showHide('$n', this)");
@@ -337,7 +392,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
     private function updateTitleReport($dstFile, $titleHTML){
         $title = (new \DOMXPath($dstFile))->query("//div[@class='layout']/h1/small")->item(0);
         $statusHTML = (new \DOMXPath($dstFile))->query("//div[@class='layout']/h1/small/span")->item(0);
-        $duration = max(array_column($titleHTML, 'duration'));
+        $duration = max($titleHTML);
         $statusHTML->nodeValue = ($this->countFailed > 0) ? 'FAILED' : 'OK';
         $statusHTML->setAttribute('style', ($this->countFailed === 0) ? 'color: green' : 'color: #e74c3c');
         $durationText = $dstFile->createTextNode(' (' . $duration . 's)');
