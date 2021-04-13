@@ -167,6 +167,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
     protected $countSkipped = 0;
     protected $countIncomplete = 0;
     protected $previousLibXmlUseErrors;
+    protected $insertNodeBeforeText;
 
     public function __construct($src = [])
     {
@@ -215,9 +216,8 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
 
         for($k=0;$k<count($this->src);$k++){
             $srcHTML = new \DOMDocument();
-            $src = $this->src[$k];
-            $srcHTML->loadHTMLFile($src);
-            $srcDURATION[$k] = $this->getDurationFile($srcHTML, $k);
+            $srcHTML->loadHTMLFile($this->src[$k]);
+            $srcDURATION[$k] = $this->getDurationFile($srcHTML);
             
             $suiteNodes = (new \DOMXPath($srcHTML))->query("//div[@class='layout']/table/tr");
             
@@ -271,30 +271,50 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
             }
             
             $diffRefNodes = array_diff($arrayRefNodes, $arraySrcRefNodes[$i]);
-            $insertNodeBeforeText = null;
-            if (!empty($diffRefNodes)) {
-                foreach ($diffRefNodes as $key => $node) {
-                    if (!str_contains($node, 'Summary')) {
-                        $newTR = $srcHTML->createElement("tr");
-                        $newTD = $srcHTML->createElement("td");
-                        $newH3 = $srcHTML->createElement("h3");
-                        $newH3Text = $srcHTML->createTextNode($node);
-                        $newH3->appendChild($newH3Text);
-                        $newTD->appendChild($newH3);
-                        $newTR->appendChild($newTD);
-                        $newTR = $srcHTML->importNode($newTR, true);
-                        $insertNodeBeforeText = $arrayRefNodes[$key+1];
-                        $insertBeforeNode = (new \DOMXPath($srcHTML))->query("//div[@class='layout']/table/tr[not(@class)][contains(.,'$insertNodeBeforeText')]");
-                        $srcTable->insertBefore($newTR, $insertBeforeNode->item(0));
-                        $newHtml = $srcHTML->saveHTML();
-                        $doc = new \DOMDocument();
-                        $doc->formatOutput = true;
-                        $doc->loadHTML($newHtml);
-                        $doc->saveHTMLFile($src);
-                    }
+            if (empty($diffRefNodes)) {
+                return;
+            }
+            $this->insertNodeBeforeText = null;
+            foreach ($diffRefNodes as $key => $node) {
+                if (strpos($node, 'Summary') === false) {
+                    $newTR = $this->createRefNodeMissing($srcHTML, $node);
+                    $insertBeforeNode = $this->getBeforeNode($srcHTML, $arrayRefNodes, $key);
+                    $srcTable->insertBefore($newTR, $insertBeforeNode);
+                    $newHtml = $srcHTML->saveHTML();
+                    $doc = new \DOMDocument();
+                    $doc->formatOutput = true;
+                    $doc->loadHTML($newHtml);
+                    $doc->saveHTMLFile($src);
                 }
             }
         }
+    }
+
+    private function createRefNodeMissing($src, $node) {
+        $newTR = $src->createElement("tr");
+        $newTD = $src->createElement("td");
+        $newH3 = $src->createElement("h3");
+        $newH3Text = $src->createTextNode($node);
+        $newH3->appendChild($newH3Text);
+        $newTD->appendChild($newH3);
+        $newTR->appendChild($newTD);
+        return $src->importNode($newTR, true);
+    }
+
+    private function getBeforeNode($src, $array, $key) {
+        $this->insertNodeBeforeText = $array[$key+1];
+        if (strpos($this->insertNodeBeforeText, 'Summary') !== false) {
+            $this->insertNodeBeforeText = 'Summary';
+        }
+        $insertBeforeNode = (new \DOMXPath($src))->query("//div[@class='layout']/table/tr[not(@class)][contains(.,'" . $this->insertNodeBeforeText . "')]")->item(0);
+        if (!$insertBeforeNode) {
+            $this->insertNodeBeforeText = $array[$key+2];
+            if (strpos($this->insertNodeBeforeText, 'Summary') !== false) {
+                $this->insertNodeBeforeText = 'Summary';
+            }
+            $insertBeforeNode = (new \DOMXPath($src))->query("//div[@class='layout']/table/tr[not(@class)][contains(.,'" . $this->insertNodeBeforeText . "')]")->item(0);
+        }
+        return $insertBeforeNode;
     }
 
     /**
