@@ -243,10 +243,6 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         $this->moveSummaryTable($dstHTML,$table);
         $this->updateSummaryTable($dstHTML);
         $this->updateToolbarTable($dstHTML);
-
-        //save final report
-        file_put_contents($this->dst.'.backup',$dstHTML->saveHTML());
-        
         $this->updateButtons($dstHTML);
 
         //save final report
