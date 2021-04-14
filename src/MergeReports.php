@@ -96,6 +96,7 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
             }
             $suiteNodes = (new \DOMXPath($srcXml))->query('//testsuites/testsuite');
             foreach ($suiteNodes as $suiteNode) {
+                $this->suiteDuration[] = $suiteNode->getAttribute('time');
                 $suiteNode = $dstXml->importNode($suiteNode, true);
                 /** @var $suiteNode \DOMElement  **/
                 $this->loadSuites($suiteNode);
@@ -132,16 +133,12 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
                 'assertions' => 0,
                 'failures' => 0,
                 'errors' => 0,
-                'time' => 0,
+                'time' => max($this->suiteDuration),
             ];
             foreach ($tests as $test) {
                 $resultNode->appendChild($test);
 
                 $data['assertions'] += (int)$test->getAttribute('assertions');
-                $data['time'] = $this->summarizeTime
-                    ? ((float) $test->getAttribute('time') + $data['time'])
-                    : max($test->getAttribute('time'), $data['time']);
-
                 $data['failures'] += $test->getElementsByTagName('failure')->length;
                 $data['errors'] += $test->getElementsByTagName('error')->length;
             }
