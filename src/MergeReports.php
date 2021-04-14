@@ -398,7 +398,8 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
      * @param $dstFile \DOMDocument - destination file
      */
     private function updateButtons($dstFile){
-        $nodes = (new \DOMXPath($dstFile))->query("//table/tr[contains(@class,'scenarioRow')]");
+        $nodes = (new \DOMXPath($dstFile))->query("//div[@class='layout']/table/tr[contains(@class, 'scenarioRow')]");
+        var_dump($nodes->length);
         for($i=2;$i<$nodes->length;$i+=2){
             $n = $i/2 + 1;
             $p = $nodes->item($i)->childNodes->item(1)->childNodes->item(1);
