@@ -142,12 +142,15 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
                 $resultNode->appendChild($test);
 
                 $data['assertions'] += (int)$test->getAttribute('assertions');
-                
+                if ($this->summarizeTime) {
+                    (float) $test->getAttribute('time') + $data['time'];
+                }
                 $data['failures'] += $test->getElementsByTagName('failure')->length;
                 $data['errors'] += $test->getElementsByTagName('error')->length;
             }
-
-            $data['time'] = max($this->suiteDuration[$suiteName]);
+            if (!$this->summarizeTime) {
+                $data['time'] = max($this->suiteDuration[$suiteName]);  
+            }
             
             foreach ($data as $key => $value) {
                 $resultNode->setAttribute($key, $value);
