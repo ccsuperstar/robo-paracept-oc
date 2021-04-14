@@ -95,14 +95,15 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
                 continue;
             }
             $suiteNodes = (new \DOMXPath($srcXml))->query('//testsuites/testsuite');
+            $i = 0;
             foreach ($suiteNodes as $suiteNode) {
-                $this->suiteDuration[] = $suiteNode->getAttribute('time');
+                $this->suiteDuration[$suiteNode->getAttribute('name')][] = (float) $suiteNode->getAttribute('time');
                 $suiteNode = $dstXml->importNode($suiteNode, true);
                 /** @var $suiteNode \DOMElement  **/
                 $this->loadSuites($suiteNode);
+                $i++;
             }
         }
-
         $this->mergeSuites($dstXml);
 
         $dstXml->save($this->dst);
@@ -125,6 +126,7 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
 
     protected function mergeSuites(\DOMDocument $dstXml)
     {
+        $i = 0;
         foreach ($this->suites as $suiteName => $tests) {
             $resultNode = $dstXml->createElement("testsuite");
             $resultNode->setAttribute('name', $suiteName);
@@ -133,19 +135,25 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
                 'assertions' => 0,
                 'failures' => 0,
                 'errors' => 0,
-                'time' => max($this->suiteDuration),
+                'time' => 0,
             ];
+
             foreach ($tests as $test) {
                 $resultNode->appendChild($test);
 
                 $data['assertions'] += (int)$test->getAttribute('assertions');
+                
                 $data['failures'] += $test->getElementsByTagName('failure')->length;
                 $data['errors'] += $test->getElementsByTagName('error')->length;
             }
+
+            $data['time'] = max($this->suiteDuration[$suiteName]);
+            
             foreach ($data as $key => $value) {
                 $resultNode->setAttribute($key, $value);
             }
             $dstXml->firstChild->appendChild($resultNode);
+            $i++;
         }
     }
 }
@@ -212,6 +220,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         $this->prepareHtmlFiles($refnodes);
 
         for($k=0;$k<count($this->src);$k++){
+            $this->printTaskInfo("Processing " . $this->src[$k]);
             $srcHTML = new \DOMDocument();
             $srcHTML->loadHTMLFile($this->src[$k]);
             $srcDURATION[$k] = $this->getDurationFile($srcHTML);
