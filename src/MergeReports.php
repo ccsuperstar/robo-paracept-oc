@@ -402,20 +402,27 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         
         for($i=2;$i<$nodes->length;$i+=2){
             $n = $i/2 + 1;
-            foreach ($nodes->item($i)->childNodes as $childNode) {
-                if ($childNode->nodeType === 1 && $childNode->tagName === 'td') {
-                    $td = $childNode;
-                    break;
+            $tdP = $nodes->item($i)->childNodes->item(1);
+            if ($tdP->nodeType !== 1) {
+                foreach ($nodes->item($i)->childNodes as $childNode) {
+                    if ($childNode->nodeType === 1 && $childNode->tagName === 'td') {
+                        $tdP = $childNode;
+                        break;
+                    }
+                }
+
+            }
+            $tdTable = $nodes->item($i+1)->childNodes->item(1);
+            if ($tdTable->nodeType !== 1) {
+                foreach ($nodes->item($i+1)->childNodes as $childNode) {
+                    if ($childNode->nodeType === 1 && $childNode->tagName === 'td') {
+                        $tdTable = $childNode;
+                        break;
+                    }
                 }
             }
-            $p = $td->childNodes->item(1);
-            foreach ($nodes->item($i+1)->childNodes as $childNode) {
-                if ($childNode->nodeType === 1 && $childNode->tagName === 'td') {
-                    $td = $childNode;
-                    break;
-                }
-            }
-            $table = $td->childNodes->item(1);
+            $p = $tdP->childNodes->item(1);
+            $table = $tdTable->childNodes->item(1);
             $p->setAttribute('onclick',"showHide('$n', this)");
             $table->setAttribute('id',"stepContainer".$n);
         }
