@@ -403,7 +403,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         for($i=2;$i<$nodes->length;$i+=2){
             $n = $i/2 + 1;
             var_dump($nodes->item($i));
-            var_dump($nodes->item($i)->childNodes->item(1));
+            var_dump($nodes->item($i)->childNodes->item(1)->nodeValue);
             var_dump($nodes->item($i)->childNodes->item(1)->childNodes->item(1));
             $p = $nodes->item($i)->childNodes->item(1)->childNodes->item(1);
             $table = $nodes->item($i+1)->childNodes->item(1)->childNodes->item(1);
