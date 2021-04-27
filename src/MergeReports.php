@@ -89,6 +89,9 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
             if (!file_exists($src)) {
                 throw new TaskException($this, "XML file $src does not exist");
             }
+            if (empty($src)) {
+                throw new TaskException($this, "XML file $src is empty");
+            }
             $loaded = $srcXml->load($src);
             if (!$loaded) {
                 $this->printTaskInfo("<error>File $src can't be loaded as XML</error>");
@@ -269,6 +272,12 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
         }
 
         for ($i=0; $i<count($this->src); $i++){
+            if (!file_exists($this->src[$i])) {
+                throw new TaskException($this, "HTML file $this->src[$i] does not exist");
+            }
+            if (empty($this->src[$i])) {
+                throw new TaskException($this, "HTML file $this->src[$i] is empty");
+            }
             $srcHTML = new \DOMDocument();
             $src = $this->src[$i];
             $srcHTML->loadHTMLFile($src);
