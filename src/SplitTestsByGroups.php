@@ -304,7 +304,7 @@ class SplitTestsFilesByFailedTask extends TestsSplitter implements TaskInterface
         $i = 0;
         $groups = [];
 
-        $this->printTaskInfo('Processing ' . count($failedFiles) . ' files');
+        $this->printTaskInfo('Rerun ' . count($failedFiles) . ' failed files');
         /** @var SplFileInfo $file */
         foreach ($failedFiles as $file) {
             $groups[($i % $this->numGroups) + 1][] = $file;
