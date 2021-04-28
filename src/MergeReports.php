@@ -288,21 +288,23 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
                 $arraySrcRefNodes[$i][] = trim($srcRefNode->textContent);
             }
             
-            $diffRefNodes = array_diff($arrayRefNodes, $arraySrcRefNodes[$i]);
-            if (empty($diffRefNodes)) {
-                return;
-            }
-            $this->insertNodeBeforeText = null;
-            foreach ($diffRefNodes as $key => $node) {
-                if (strpos($node, 'Summary') === false) {
-                    $newTR = $this->createRefNodeMissing($srcHTML, $node);
-                    $insertBeforeNode = $this->getBeforeNode($srcHTML, $arrayRefNodes, $key);
-                    $srcTable->insertBefore($newTR, $insertBeforeNode);
-                    $newHtml = $srcHTML->saveHTML();
-                    $doc = new \DOMDocument();
-                    $doc->formatOutput = true;
-                    $doc->loadHTML($newHtml);
-                    $doc->saveHTMLFile($src);
+            if (array_key_exists($i, $arraySrcRefNodes)) {
+                $diffRefNodes = array_diff($arrayRefNodes, $arraySrcRefNodes[$i]);
+                if (empty($diffRefNodes)) {
+                    return;
+                }
+                $this->insertNodeBeforeText = null;
+                foreach ($diffRefNodes as $key => $node) {
+                    if (strpos($node, 'Summary') === false) {
+                        $newTR = $this->createRefNodeMissing($srcHTML, $node);
+                        $insertBeforeNode = $this->getBeforeNode($srcHTML, $arrayRefNodes, $key);
+                        $srcTable->insertBefore($newTR, $insertBeforeNode);
+                        $newHtml = $srcHTML->saveHTML();
+                        $doc = new \DOMDocument();
+                        $doc->formatOutput = true;
+                        $doc->loadHTML($newHtml);
+                        $doc->saveHTMLFile($src);
+                    }
                 }
             }
         }
@@ -340,6 +342,9 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
      * @param $srcFile \DOMDocument - src file
      */
     private function getDurationFile($srcFile){
+        if (!(new \DOMXPath($srcFile))->query("//div[@class='layout']/h1/small")->item(0)) {
+            return;
+        }
         $regexDuration = '/(\d{1,}[\.]{0,1}\d{0,})/';
         preg_match($regexDuration, (new \DOMXPath($srcFile))->query("//div[@class='layout']/h1/small")->item(0)->textContent, $matches);
         return $matches[0];
