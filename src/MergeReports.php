@@ -152,7 +152,8 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
                 $data['errors'] += $test->getElementsByTagName('error')->length;
             }
             if (!$this->summarizeTime) {
-                $data['time'] = max($this->suiteDuration[$suiteName]);  
+                $data['time'] = max($this->suiteDuration[$suiteName]);
+                $this->printTaskInfo("Execution time: ".max($this->suiteDuration[$suiteName]));
             }
             
             foreach ($data as $key => $value) {
