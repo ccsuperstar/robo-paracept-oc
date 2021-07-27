@@ -100,13 +100,14 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
             $suiteNodes = (new \DOMXPath($srcXml))->query('//testsuites/testsuite');
             $i = 0;
             foreach ($suiteNodes as $suiteNode) {
-                $this->suiteDuration[$suiteNode->getAttribute('name')][] = (float) $suiteNode->getAttribute('time');
+                $this->suiteDuration[] = (float) $suiteNode->getAttribute('time');
                 $suiteNode = $dstXml->importNode($suiteNode, true);
                 /** @var $suiteNode \DOMElement  **/
                 $this->loadSuites($suiteNode);
                 $i++;
             }
         }
+        
         $this->mergeSuites($dstXml);
 
         $dstXml->save($this->dst);
@@ -146,14 +147,10 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
 
                 $data['assertions'] += (int)$test->getAttribute('assertions');
                 if ($this->summarizeTime) {
-                    (float) $test->getAttribute('time') + $data['time'];
+                    $data['time'] = (float) $test->getAttribute('time') + $data['time'];
                 }
                 $data['failures'] += $test->getElementsByTagName('failure')->length;
                 $data['errors'] += $test->getElementsByTagName('error')->length;
-            }
-            if (!$this->summarizeTime) {
-                $data['time'] = max($this->suiteDuration[$suiteName]);
-                $this->printTaskInfo("Execution time: ".max($this->suiteDuration[$suiteName]));
             }
             
             foreach ($data as $key => $value) {
@@ -161,6 +158,9 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
             }
             $dstXml->firstChild->appendChild($resultNode);
             $i++;
+        }
+        if (!$this->summarizeTime) {
+            $data['time'] = max($this->suiteDuration);
         }
     }
 }
@@ -216,7 +216,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
 
         //read template source file as main
         $dstHTML = new \DOMDocument();
-        $dstHTML->loadHTMLFile('tests/_output/template_parallel_report.html',LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        $dstHTML->loadHTMLFile('tests/_data/template_parallel_report.html',LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
 
         //main node for all table rows
         $table = (new \DOMXPath($dstHTML))->query("//table")->item(0);
