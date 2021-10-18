@@ -215,7 +215,7 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
 
         //read template source file as main
         $dstHTML = new \DOMDocument();
-        $dstHTML->loadHTMLFile('tests/_output/template_parallel_report.html',LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        $dstHTML->loadHTMLFile('tests/_data/template_parallel_report.html',LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
 
         //main node for all table rows
         $table = (new \DOMXPath($dstHTML))->query("//table")->item(0);
