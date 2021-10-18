@@ -153,7 +153,6 @@ class MergeXmlReportsTask extends BaseTask implements TaskInterface, MergeReport
             }
             if (!$this->summarizeTime) {
                 $data['time'] = max($this->suiteDuration[$suiteName]);
-                $this->printTaskInfo("Execution time: ".max($this->suiteDuration[$suiteName]));
             }
             
             foreach ($data as $key => $value) {
@@ -266,11 +265,11 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
 
     private function prepareHtmlFiles($refnodes) {
 
-        //in template, we have always the five suites + summary (we want to check if all suites names are present)
+        //in template, we have always the four suites + summary (we want to check if all suites names are present)
         foreach ($refnodes as $refnode) {
             $arrayRefNodes[] = trim($refnode->textContent);
         }
-        
+
         for ($i=0; $i<count($this->src); $i++){
             if (!file_exists($this->src[$i])) {
                 throw new TaskException($this, "HTML file $this->src[$i] does not exist");
@@ -336,20 +335,6 @@ class MergeHTMLReportsTask extends BaseTask implements TaskInterface, MergeRepor
                 $this->insertNodeBeforeText = 'Summary';
             }
             $insertBeforeNode = (new \DOMXPath($src))->query("//div[@class='layout']/table/tr[not(@class)][contains(.,'" . $this->insertNodeBeforeText . "')]")->item(0);
-            if (!$insertBeforeNode) {
-                $this->insertNodeBeforeText = $array[$key+3];
-                if (strpos($this->insertNodeBeforeText, 'Summary') !== false) {
-                    $this->insertNodeBeforeText = 'Summary';
-                }
-                $insertBeforeNode = (new \DOMXPath($src))->query("//div[@class='layout']/table/tr[not(@class)][contains(.,'" . $this->insertNodeBeforeText . "')]")->item(0);
-                if (!$insertBeforeNode) {
-                    $this->insertNodeBeforeText = $array[$key+4];
-                    if (strpos($this->insertNodeBeforeText, 'Summary') !== false) {
-                        $this->insertNodeBeforeText = 'Summary';
-                    }
-                    $insertBeforeNode = (new \DOMXPath($src))->query("//div[@class='layout']/table/tr[not(@class)][contains(.,'" . $this->insertNodeBeforeText . "')]")->item(0);
-                }
-            }
         }
         return $insertBeforeNode;
     }

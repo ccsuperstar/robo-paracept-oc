@@ -62,7 +62,6 @@ abstract class TestsSplitter extends BaseTask
     protected $saveTo = 'tests/_data/paracept_';
     protected $excludePath = 'vendor';
     protected $notName = '';
-    protected $name = '';
 
     public function __construct($groups)
     {
@@ -100,13 +99,6 @@ abstract class TestsSplitter extends BaseTask
     public function notName($name)
     {
         $this->notName = $name;
-
-        return $this;
-    }
-
-    public function name($name)
-    {
-        $this->name = $name;
 
         return $this;
     }
@@ -474,26 +466,16 @@ class SplitTestFilesByGroupsTask extends TestsSplitter implements TaskInterface
 {
     public function run()
     {
-        if ($this->name !== '') {
-            $files = Finder::create()
-                ->followLinks()
-                ->name($this->name)
-                ->path($this->testsFrom)
-                ->in($this->projectRoot ? $this->projectRoot : getcwd())
-                ->exclude($this->excludePath)
-                ->notName($this->notName);
-        } else {
-            $files = Finder::create()
-                ->followLinks()
-                ->name('*Cept.php')
-                ->name('*Cest.php')
-                ->name('*Test.php')
-                ->name('*.feature')
-                ->path($this->testsFrom)
-                ->in($this->projectRoot ? $this->projectRoot : getcwd())
-                ->exclude($this->excludePath)
-                ->notName($this->notName);
-        }
+        $files = Finder::create()
+            ->followLinks()
+            ->name('*Cept.php')
+            ->name('*Cest.php')
+            ->name('*Test.php')
+            ->name('*.feature')
+            ->path($this->testsFrom)
+            ->in($this->projectRoot ? $this->projectRoot : getcwd())
+            ->exclude($this->excludePath)
+            ->notName($this->notName);
 
         $i = 0;
         $groups = [];
